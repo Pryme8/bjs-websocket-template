@@ -1,0 +1,5 @@
+{
+    "watch": ["server/"],
+    "ext": "ts,js",
+    "exec": "powershell -Command \"$process = Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue; if ($process) { Stop-Process -Id $process.OwningProcess -Force }; node node-runner.js\""
+}
