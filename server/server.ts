@@ -5,7 +5,7 @@ import { Server } from 'http';
 
 // Initialize an Express application
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 1337;
 
 // Serve static files from a directory (optional)
 app.use(express.static('public'));
