@@ -3,7 +3,6 @@ import { IDefaultComponentProps } from '../interfaces/interfaces';
 import { Observable } from '@babylonjs/core/Misc/observable';
 import { IMessage, ParseMessage } from '../../shared/message';
 
-
 export interface IServerProviderContext{
     server: WebSocket | null;
     messages: any[];
@@ -35,7 +34,7 @@ const WebSocketProvider: FC<IWebSocketProviderProps> = ({ children }) => {
     }, []);
   
     useEffect(() => {
-      const webSocket = new WebSocket('ws://localhost:3001');
+      const webSocket = new WebSocket('ws://localhost:1337');
   
       webSocket.onopen = () => {
         console.log('WebSocket Connected');
@@ -46,7 +45,7 @@ const WebSocketProvider: FC<IWebSocketProviderProps> = ({ children }) => {
       };
   
       webSocket.onerror = (error) => {
-        console.error('WebSocket Error:', error);
+        console.warn('WebSocket Error:', error);
       };
   
       webSocket.onclose = () => {
@@ -60,7 +59,9 @@ const WebSocketProvider: FC<IWebSocketProviderProps> = ({ children }) => {
       }
 
       return () => {
-        webSocket.close();
+        if(webSocket.readyState === WebSocket.OPEN){
+            webSocket.close();
+        }
       };
     }, []);
   
