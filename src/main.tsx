@@ -6,9 +6,9 @@ import './index.css'
 import ServerProvider from './providers/ServerProvider.js'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <ServerProvider>
+  <ServerProvider>
+    <React.StrictMode>
       <App />
-    </ServerProvider>
-  </React.StrictMode>,
+    </React.StrictMode>
+  </ServerProvider>,
 )

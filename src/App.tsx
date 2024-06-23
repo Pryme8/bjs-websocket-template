@@ -1,55 +1,79 @@
+import './App.css'
 import { useState, FC, useEffect } from 'react'
 import reactLogo from './assets/react.svg'
 import webSocketLogo from './assets/websocket.svg'
 import viteLogo from '/vite.svg'
-import './App.css'
 import { useServer } from './providers/ServerProvider'
-import { CreateMessage, MessageTypes } from '../shared/message'
+import { MessageTypes } from '../shared/message'
+import { IUserData } from './interfaces/user/user'
 
 interface IAppProps { 
 }
 const App: FC<IAppProps> = () => {
   const [count, setCount] = useState(0)
-  const {server, sendMessage, onMessageObservable} = useServer();
+  const [peers, setPeers] = useState<IUserData[]>([]);
+  const [localUser, setLocalUser] = useState<IUserData | null>(null);
+  const {sendMessage, onMessageObservable} = useServer();
+
+  const [peerCursors, setPeerCursors] = useState<{ [uid: string]: {name:string; x: number; y: number } }>({});
 
   const onClickHandler = () => {
-    sendMessage(CreateMessage(MessageTypes.UPDATE_SERVER_DATA, { target: 'countUp' }));
+    sendMessage(MessageTypes.UPDATE_SERVER_DATA, { target: 'countUp' }, true);
   };
 
   const onResetHandler = () => { 
-    sendMessage(CreateMessage(MessageTypes.UPDATE_SERVER_DATA, { target: 'reset' }));
+    sendMessage(MessageTypes.UPDATE_SERVER_DATA, { target: 'reset' }, true);
   };
 
   useEffect(() => {
     onMessageObservable.add((message) => {
-      switch (message.type) { 
+      switch (message.type) {
+        case MessageTypes.CLIENT_HANDSHAKE:
+          console.log('Client handshake received', message.data);
+          setCount(message.data?.serverState?.count ?? 0);
+          setLocalUser(message.data?.serverState?.users.find((user: IUserData) => user.uid === message.data?.clientState?.uid) ?? null);
+          setPeers(message.data?.serverState?.users.filter((user: IUserData) => user.uid !== message.data?.clientState?.uid) ?? [])
+          console.log("find", message.data?.serverState?.users.find((user: IUserData) => user.uid === message.data?.clientState?.uid));
+          break; 
         case MessageTypes.SEND_SERVER_DATA:
           setCount(message.data?.count ?? 0);
+          setPeers(message.data?.users.filter((user: IUserData) => user.uid !== localUser?.uid));
+          break;
+        case MessageTypes.PEER_UPDATE:
+          // Step 2: Update state on PEER_UPDATE message
+          const updatedCursors = { ...peerCursors };
+          const peerData = message.data; // Assuming this contains { uid: string, cursor: { x: number, y: number } }
+          const centerX = window.innerWidth * 0.5;
+          const centerY = window.innerHeight * 0.5;
+          const absoluteX = centerX + peerData.cursorPosition.x;
+          const absoluteY = centerY + peerData.cursorPosition.y;
+          updatedCursors[peerData.uid] = { name: peerData.name, x: absoluteX, y: absoluteY };
+          setPeerCursors(updatedCursors);
           break;
         default:
           console.error('Unknown message type', message.type);
       }
     });
-   
-    const handleServerReady = () => {
-      sendMessage(CreateMessage(MessageTypes.GET_SERVER_DATA));
-    };
+  }, [onMessageObservable, localUser]);
+
+  useEffect(() => {
+    // Only proceed if localUser is set
+    if (localUser) {
+      // Define the event listener
+      const handleMouseMove = (event: MouseEvent) => {
+        const offsetX = event.clientX - window.innerWidth * 0.5;
+        const offsetY = event.clientY - window.innerHeight * 0.5;
+        // Send "PEER_UPDATE" message with cursor position
+        sendMessage(MessageTypes.SEND_PEER_DATA, { uid: localUser.uid, cursorPosition: { x: offsetX, y: offsetY }});
+      };
   
-    if (server) {
-      if (server.readyState === WebSocket.OPEN) {
-        // Server is already open, send message immediately
-        handleServerReady();
-      } else {
-        // Wait for the server to be ready
-        server.addEventListener('open', handleServerReady);
-      }
+      // Add event listener to document
+      document.addEventListener('mousemove', handleMouseMove);
+  
+      // Cleanup function to remove the event listener
+      return () => document.removeEventListener('mousemove', handleMouseMove);
     }
-    return () => {
-      if (server) {
-        server.removeEventListener('open', handleServerReady);
-      }
-    };
-  }, [server, onMessageObservable]);
+  }, [localUser, sendMessage]);
 
   return (
     <>
@@ -71,14 +95,25 @@ const App: FC<IAppProps> = () => {
         </button>
         <button onClick={onResetHandler}>
           Reset
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
+        </button>       
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <div className="card">
+        <h2>Users</h2>
+        <h3>You are logged in as {localUser?.name ?? "unknown"}</h3>
+        <p>Other Users:</p>
+        <ul>
+          {peers.map((user, index) => (
+            <li key={index}>{user.name}</li>
+          ))}
+        </ul>
+      </div>
+
+      {Object.entries(peerCursors).map(([uid, data]) => (
+        <div key={uid} className='peerCursor' style={{ left: data.x, top: data.y }}>
+          <span>{data.name}</span>
+        </div>
+      ))}
+
     </>
   )
 }
