@@ -69,6 +69,22 @@ npm run preview
 - `src/client`: Contains the React application.
 - `src/server`: Contains the WebSocket server implemented with Express and `ws`.
 
+### Node-Runner and Nodemon Explanation
+
+The node-runner.js script plays a pivotal role in our development setup, particularly in enhancing the support for ts-node, which allows TypeScript to be executed directly in a Node.js environment without prior compilation to JavaScript. Here's a simplified and more readable explanation of its components and functionalities:
+
+**ViteNodeServer Initialization**: The script initializes a [`ViteNodeServer`](command:_github.copilot.openSymbolFromReferences?%5B%7B%22%24mid%22%3A1%2C%22path%22%3A%22%2Fd%3A%2FgitHUB%2Fbjs-websocket-template%2Fnode_modules%2Fvite-node%2Fdist%2Fserver.d.ts%22%2C%22scheme%22%3A%22file%22%7D%2C%7B%22line%22%3A40%2C%22character%22%3A4%7D%5D "node_modules/vite-node/dist/server.d.ts") instance. This server is responsible for handling module resolution, plugin initialization, and serving files with Vite's powerful features like hot module replacement and efficient bundling.
+
+**Sourcemaps Support**: It installs support for sourcemaps via [`installSourcemapsSupport`](command:_github.copilot.openSymbolFromReferences?%5B%7B%22%24mid%22%3A1%2C%22path%22%3A%22%2Fd%3A%2FgitHUB%2Fbjs-websocket-template%2Fnode_modules%2Fvite-node%2Fdist%2Fsource-map.d.ts%22%2C%22scheme%22%3A%22file%22%7D%2C%7B%22line%22%3A11%2C%22character%22%3A0%7D%5D "node_modules/vite-node/dist/source-map.d.ts"). This is essential for debugging, as it ensures that errors point to the correct line numbers in the original source files, rather than the compiled output.
+
+**ViteNodeRunner Creation**: The script creates a [`ViteNodeRunner`](command:_github.copilot.openSymbolFromReferences?%5B%7B%22%24mid%22%3A1%2C%22path%22%3A%22%2Fd%3A%2FgitHUB%2Fbjs-websocket-template%2Fnode_modules%2Fvite-node%2Fdist%2Findex-O2IrwHKf.d.ts%22%2C%22scheme%22%3A%22file%22%7D%2C%7B%22line%22%3A171%2C%22character%22%3A4%7D%5D "node_modules/vite-node/dist/index-O2IrwHKf.d.ts") instance. This runner is designed to execute Node.js scripts within the Vite environment, allowing developers to leverage Vite's module resolution and hot reloading capabilities in server-side code.
+
+**Module Fetching and Resolution**: The runner includes custom functions for fetching and resolving modules ([`fetchModule`](command:_github.copilot.openSymbolFromReferences?%5B%7B%22%24mid%22%3A1%2C%22path%22%3A%22%2Fd%3A%2FgitHUB%2Fbjs-websocket-template%2Fnode_modules%2Fvite-node%2Fdist%2Findex-O2IrwHKf.d.ts%22%2C%22scheme%22%3A%22file%22%7D%2C%7B%22line%22%3A260%2C%22character%22%3A4%7D%5D "node_modules/vite-node/dist/index-O2IrwHKf.d.ts") and [`resolveId`](command:_github.copilot.openSymbolFromReferences?%5B%7B%22%24mid%22%3A1%2C%22path%22%3A%22%2Fd%3A%2FgitHUB%2Fbjs-websocket-template%2Fnode_modules%2Fvite-node%2Fdist%2Findex-O2IrwHKf.d.ts%22%2C%22scheme%22%3A%22file%22%7D%2C%7B%22line%22%3A261%2C%22character%22%3A4%7D%5D "node_modules/vite-node/dist/index-O2IrwHKf.d.ts")). These functions ensure that modules are loaded correctly, taking advantage of Vite's optimization strategies.
+
+**Nodemon Integration**: While not explicitly mentioned in the excerpt, integrating Nodemon with this setup enhances the development experience by automatically restarting the Node.js application when file changes in the directory are detected. This is particularly useful in a development environment where changes are frequent, and manual restarts would be cumbersome.
+
+Together, [`node-runner.js`](command:_github.copilot.openRelativePath?%5B%7B%22scheme%22%3A%22file%22%2C%22authority%22%3A%22%22%2C%22path%22%3A%22%2Fd%3A%2FgitHUB%2Fbjs-websocket-template%2Fnode-runner.js%22%2C%22query%22%3A%22%22%2C%22fragment%22%3A%22%22%7D%5D "d:\gitHUB\bjs-websocket-template\node-runner.js") and Nodemon streamline the development process, making it more efficient and developer-friendly by automating tasks like module resolution, error mapping, and application restarting.
+
 ## Contributing
 
 Contributions are welcome. Please feel free to submit pull requests or open issues to discuss proposed changes or additions.
