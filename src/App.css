@@ -1,8 +1,18 @@
+
+html, body{
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Roboto', sans-serif;
+  overflow: hidden;
+}
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  overflow: hidden;
 }
 
 .logo {
@@ -43,4 +53,23 @@
 
 .webSocketLogo {
   filter: invert(0.8);
+}
+
+.peerCursor {
+  width: 10px; /* Width of the box */
+  height: 10px; /* Height of the box */
+  background-color: red; /* Background color of the box */
+  border: 1px solid black; /* Border of the box */
+  position: absolute; /* Positioning relative to its normal position */
+  transform: translate(-50%, -50%); /* Center the box around the cursor position */
+  pointer-events: none; /* Prevent the box from capturing mouse events */
+  white-space: nowrap; /* Prevent the box from wrapping */
+  overflow: visible; /* Allow the box to overflow */
+  border-radius: 10px;
+  
+}
+
+.peerCursor span {
+  position: absolute; /* Positioning relative to its normal position */
+  transform: translate(-50%, 50%); /* Center the box around the cursor position */
 }
