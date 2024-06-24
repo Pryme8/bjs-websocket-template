@@ -1,7 +1,14 @@
 import express from 'express';
-import { WebSocketServer } from 'ws';
+import { WebSocketServer, WebSocket} from 'ws';
 import { CreateMessage, CreateResponse, IMessage, MessageTypes, ParseMessage } from '../shared/message';
 import { User } from './user/user';
+import { NullEngineManager } from './nullEngineManager/nullEngineManager';
+import { BouncingBall, IBouncingBall } from '../shared/entities/prefabs/bouncingBall';
+import { SyncedEntity, SyncedEntityLocation } from '../shared/entities/syncedEntity';
+import { EntityClassMap } from 'entities/entities';
+import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { Color3 } from '@babylonjs/core/Maths/math.color';
+
 
 // Initialize an Express application
 const app = express();
@@ -18,22 +25,23 @@ const server = app.listen(PORT, () => {
 // Attach WebSocket server to the HTTP server
 const wss = new WebSocketServer({ server });
 
+const nullEngineManager = NullEngineManager.Instance;
 interface IServerState {
   connectedUsers: number;
-  count: number;
+  entities: SyncedEntity[];
   users: Map<string, User>;
 }
 
 const ServerState: IServerState = {
   connectedUsers: 0,
-  count: 0,
+  entities: [],
   users: new Map<string, User>(),
 };
 
 const ServerStateSerialized = () => {
   return {
     connectedUsers: ServerState.connectedUsers,
-    count: ServerState.count,
+    count: ServerState.entities.length,
     users: Array.from(ServerState.users.values()).map((user)=>user.serialize()),
   }
 }
@@ -43,14 +51,18 @@ const SSS = ServerStateSerialized;
 const SyncServerStateToAllClients = (wss: WebSocketServer) => {
   console.log('Syncing server state to all clients', wss.clients.size)
   const message = CreateMessage(MessageTypes.SEND_SERVER_DATA, SSS()).message;
-  wss.clients.forEach((client) => {
+  SendToAllClients(wss.clients, message)
+}
+
+const SendToAllClients = (clients: Set<WebSocket>, message: string) => {
+  clients.forEach((client) => {
     if (client.readyState === 1) {
       client.send(message);
     }
   });
 }
 
-wss.on('connection', (ws: any) => {
+wss.on('connection', (ws) => {
   const uid = crypto.randomUUID();
   console.log('Client connected', uid);
   ServerState.users.set(uid, new User(uid, `User ${uid.split("-")[0]}`, ws));
@@ -96,16 +108,46 @@ wss.on('connection', (ws: any) => {
           const target = message.data?.target;
           switch(target){
             case 'countUp':
-              ServerState.count++
+                const entity = NullEngineManager.CreateEntity(
+                  BouncingBall,
+                  {
+                    name: `Ball ${Date.now()}`,
+                    location:{
+                      location: SyncedEntityLocation.SERVER,
+                      server: wss,
+                    },
+                    radius: 1,
+                    color: Color3.Random().toHexString(),
+                    position: Vector3.Zero(),
+                    rotation: Vector3.Zero(),
+                    scale: Vector3.One(),
+                  } as IBouncingBall
+                )
+                ServerState.entities.push(entity)
               break;
             case 'reset':
-              ServerState.count = 0;
+                const list = [...ServerState.entities];
+                ServerState.entities = [];   
+                NullEngineManager.DestroyEntities(list);
+                const message = CreateMessage(MessageTypes.DESTROY_ENTITY, {uids: list.map((entity) => entity.uid)}).message;
+                SendToAllClients(wss.clients, message);
               break;
             default:
               console.error('Unknown target', target);
           }
           // Send data back to all clients
           SyncServerStateToAllClients(wss);
+          break;
+        }
+
+        case MessageTypes.ENTITY_UPDATE:{
+          const entity = ServerState.entities.find((entity) => entity.uid === message.data.uid);    
+          if(entity){
+            entity.digestMutations(message.data);
+            SendToAllClients(wss.clients, CreateMessage(MessageTypes.ENTITY_UPDATE, {
+              ...entity.manifestValues
+            }).message);
+          }
           break;
         }
 

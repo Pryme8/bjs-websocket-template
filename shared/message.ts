@@ -7,6 +7,8 @@ export enum MessageTypes{
     CLIENT_HANDSHAKE = 'CLIENT_HANDSHAKE',
     SEND_PEER_DATA = 'SEND_PEER_DATA',
     PEER_UPDATE = 'PEER_UPDATE',
+    ENTITY_UPDATE = 'ENTITY_UPDATE',
+    DESTROY_ENTITY = 'DESTROY_ENTITY',
 }
 
 export interface IMessage {
@@ -17,7 +19,6 @@ export interface IMessage {
 
 export const CreateMessage = (type: MessageTypes, data?: any, reliable?: boolean): {message: string, uid?: string} => {
     const uid = reliable ? crypto.randomUUID() : undefined;   
-
     return {
         message: JSON.stringify({
             type,

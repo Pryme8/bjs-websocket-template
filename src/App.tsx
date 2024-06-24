@@ -1,11 +1,13 @@
 import './App.css'
-import { useState, FC, useEffect } from 'react'
+import { useState, FC, useEffect, useRef } from 'react'
 import reactLogo from './assets/react.svg'
 import webSocketLogo from './assets/websocket.svg'
 import viteLogo from '/vite.svg'
 import { useServer } from './providers/ServerProvider'
 import { MessageTypes } from '../shared/message'
 import { IUserData } from './interfaces/user/user'
+import { SyncedEntity } from 'entities/syncedEntity'
+import BabylonRender from './components/babylon/babylonRender'
 
 interface IAppProps { 
 }
@@ -13,7 +15,20 @@ const App: FC<IAppProps> = () => {
   const [count, setCount] = useState(0)
   const [peers, setPeers] = useState<IUserData[]>([]);
   const [localUser, setLocalUser] = useState<IUserData | null>(null);
-  const {sendMessage, onMessageObservable} = useServer();
+  const {client, sendMessage, onMessageObservable} = useServer();
+  const babylonRenderRef = useRef<any | null>(null);
+
+  const callCreateEntity = (data: any, _client: WebSocket) => {
+    if(babylonRenderRef?.current){
+      babylonRenderRef?.current.entityUpdate(data, _client);
+    }   
+  };
+
+  const callDestroyEntity = (data: any) => {
+    if(babylonRenderRef?.current){
+      babylonRenderRef?.current.destroyEntities(data.uids);
+    }   
+  };
 
   const [peerCursors, setPeerCursors] = useState<{ [uid: string]: {name:string; x: number; y: number } }>({});
 
@@ -50,6 +65,14 @@ const App: FC<IAppProps> = () => {
           updatedCursors[peerData.uid] = { name: peerData.name, x: absoluteX, y: absoluteY };
           setPeerCursors(updatedCursors);
           break;
+        case MessageTypes.ENTITY_UPDATE:
+          if(client){
+            callCreateEntity(message.data, client)
+          }
+          break;
+        case MessageTypes.DESTROY_ENTITY:
+          callDestroyEntity(message.data)
+          break;          
         default:
           console.error('Unknown message type', message.type);
       }
@@ -77,7 +100,10 @@ const App: FC<IAppProps> = () => {
 
   return (
     <>
-      <div>
+      <div style={{position: "absolute", left:0, top:0, width:"100%", height:"100%", zIndex:-1}}>
+        <BabylonRender ref={babylonRenderRef} />
+      </div>
+      <div className="menu">
         <a href="https://vitejs.dev" target="_blank">
           <img src={viteLogo} className="logo" alt="Vite logo" />
         </a>
@@ -87,33 +113,32 @@ const App: FC<IAppProps> = () => {
         <a href="https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API" target="_blank">
           <img src={webSocketLogo} className="logo react webSocketLogo" alt="WebSocket logo" />
         </a>
-      </div>
-      <h1>Vite + React + WS</h1>
-      <div className="card">
-        <button onClick={onClickHandler}>
-          count is {count}
-        </button>
-        <button onClick={onResetHandler}>
-          Reset
-        </button>       
-      </div>
-      <div className="card">
-        <h2>Users</h2>
-        <h3>You are logged in as {localUser?.name ?? "unknown"}</h3>
-        <p>Other Users:</p>
-        <ul>
-          {peers.map((user, index) => (
-            <li key={index}>{user.name}</li>
-          ))}
-        </ul>
+        <h4>Vite + React + WS</h4>
+        <div className="card">
+          <button className="pointerEventsOn" onClick={onClickHandler}>
+            count is {count}
+          </button>
+          <button className="pointerEventsOn" onClick={onResetHandler}>
+            Reset
+          </button>       
+        </div>
+        <div className="card">
+          <h2>Users</h2>
+          <h3>You are logged in as {localUser?.name ?? "unknown"}</h3>
+          <p>Other Users:</p>
+          <ul>
+            {peers.map((user, index) => (
+              <li key={index}>{user.name}</li>
+            ))}
+          </ul>
+        </div>
       </div>
 
       {Object.entries(peerCursors).map(([uid, data]) => (
         <div key={uid} className='peerCursor' style={{ left: data.x, top: data.y }}>
           <span>{data.name}</span>
         </div>
-      ))}
-
+      ))} 
     </>
   )
 }
