@@ -15,12 +15,13 @@ import { ExecuteCodeAction } from "@babylonjs/core/Actions/directActions";
 import "@babylonjs/core/Culling/ray";
 
 
-export interface IBouncingBall extends ITransformEntity{
+export interface IInputBall extends ITransformEntity{
+    ownerUid: string;
     radius: number;
     color: string;
 }
-export class BouncingBall extends TransformEntity{
-    protected _type: string = "BouncingBall";
+export class InputBall extends TransformEntity{
+    protected _type: string = "InputBall";
     private _material: StandardMaterial;
     public get color(): Color3{
         return this._material.diffuseColor;
@@ -29,12 +30,11 @@ export class BouncingBall extends TransformEntity{
         this._material.diffuseColor = value;
     }
 
-    private _sphere: AbstractMesh; 
-    private _updateObservable!: Observer<Scene>;   
+    private _sphere: AbstractMesh;   
 
     protected _manifest: string[] = ["type", "uid", "name", "position", "rotation", "scale", "color"];
     protected _mutations: string[] = ["name", "position", "rotation", "scale", "color"];
-    constructor(_props: IBouncingBall){
+    constructor(_props: IInputBall){
         super(_props);
         const sphere: AbstractMesh = CreateSphere(_props.name, {diameter: _props.radius * 2}, this.scene);
         sphere.parent = this.transformNode;
@@ -44,31 +44,16 @@ export class BouncingBall extends TransformEntity{
         this._sphere = sphere;
         const material = new StandardMaterial("material", this.scene);
         material.diffuseColor = Color3.FromHexString(_props.color ?? "#FFFFFF");
-        sphere.material = material 
-        this._material = material;        
+        sphere.material = material
+        this._material = material;
         this._handleLocation();
     }
 
     private _handleLocation(){
         if(this.location.location === SyncedEntityLocation.SERVER){
-            this._timeOffset = Math.random() * 1000;
-            this.position.x = Math.cos(NEM.Time + this._timeOffset) * 2;         
+      
         }else if(this.location.location === SyncedEntityLocation.CLIENT){       
-            const actionManager = new ActionManager(this.scene);
-            actionManager.registerAction(
-                new ExecuteCodeAction({
-                    trigger: ActionManager.OnPickTrigger
-                }, ()=>{              
-                    this.location.client?.send(
-                        CreateMessage(MessageTypes.ENTITY_UPDATE, {
-                            uid: this.uid,
-                            color: Color3.Random().asArray(),
-                        }).message
-                    )
-                })
-            );
-            this._sphere.isPickable = true;
-            this._sphere.actionManager = actionManager;
+            
         }
     }
 

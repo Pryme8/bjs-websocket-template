@@ -52,7 +52,7 @@ export class NullEngineManager{
         this._entityManager = new EntityManager({scene: this._scene, engine: this._engine});
 
         this._engine.runRenderLoop(() => {
-            this._scene.render();
+            this._scene.render(false, true);
             this._delta = this._engine.getDeltaTime();
             this._time += this._delta;
             this._delta = this._delta;

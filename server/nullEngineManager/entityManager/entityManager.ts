@@ -44,5 +44,9 @@ export class EntityManager{
         });
     }
 
-    public update(delta: number){}
+    public update(delta: number){
+        this.entities.forEach((entity) => {
+            entity.update(delta);
+        });
+    }
 }

@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useEffect, useState, FC, useCallback } from 'react';
-import { IDefaultComponentProps } from '../interfaces/interfaces';
+import { createContext, useContext, useEffect, useState, FC, useCallback } from 'react';
+import { IDefaultComponentProps } from '../../interfaces/interfaces';
 import { Observable } from '@babylonjs/core/Misc/observable';
-import { CreateMessage, CreateResponse, IMessage, MessageTypes, ParseMessage } from '../../shared/message';
+import { CreateMessage, CreateResponse, IMessage, MessageTypes, ParseMessage } from '../../../shared/message';
 
 export interface IServerProviderContext{
   client: WebSocket | null;

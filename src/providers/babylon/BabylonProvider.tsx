@@ -5,17 +5,39 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Scene } from "@babylonjs/core/scene";
 import { EntityClassMap } from "../../../shared/entities/entities";
 import { SyncedEntity, SyncedEntityLocation } from "../../../shared/entities/syncedEntity";
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { createContext, FC, useContext, useEffect, useRef, useState } from "react";
+import { IDefaultComponentProps } from "../../interfaces/interfaces";
+import { BabylonInputManager } from "./input/BabylonInputManager";
 
 let entities: {[key:string]: SyncedEntity} = {};
 
-const BabylonRender = forwardRef((props, ref) => {
-  // Initialize the canvasRef with useRef hook
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [scene, setScene] = useState<Scene | null>(null);
+interface BabylonContextType {
+  scene: Scene | null;
+  engine: Engine | null;
+  entities: { [key: string]: SyncedEntity };
+  entityUpdate: (message: any, client: WebSocket) => void;
+  destroyEntities: (uids: string[]) => void;
+}
 
-  useImperativeHandle(ref, () => ({
-    entityUpdate: (message: any, client: WebSocket) => {
+const BabylonContext = createContext<BabylonContextType>({
+  scene: null,
+  engine: null,
+  entities: {},
+  entityUpdate: () => {},
+  destroyEntities: () => {},
+});
+
+export const useBabylon = () => useContext(BabylonContext);
+
+interface IBabylonProviderProps extends IDefaultComponentProps{}
+
+const BabylonProvider: FC<IBabylonProviderProps> = ({ children }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [engine, setEngine] = useState<Engine | null>(null);
+  const [scene, setScene] = useState<Scene | null>(null);
+  let entities: { [key: string]: SyncedEntity } = {};
+  
+  const entityUpdate = (message: any, client: WebSocket) => {
       if(scene){
           if(!entities[message.uid]){
             const _Entity = EntityClassMap.get(message.type);
@@ -33,26 +55,29 @@ const BabylonRender = forwardRef((props, ref) => {
             entity.digestMutations(message);
           }  
       }
-    },
-    destroyEntities: (uids: string[]) => {
-      console.log(`Destroying entities: ${uids}`);
-      if (scene) {
-        uids.forEach((uid) => {
-          if (entities[uid]) {
-            entities[uid].destroy();
-            delete entities[uid];
-          }
-        });
-      }
     }
-    // You can expose more functions here
-  }));
+
+  const destroyEntities = (uids: string[]) => {
+    console.log(`Destroying entities: ${uids}`);
+    if (scene) {
+      uids.forEach((uid) => {
+        if (entities[uid]) {
+          entities[uid].destroy();
+          delete entities[uid];
+        }
+      });
+    }
+  }   
 
   useEffect(() => {
     if (canvasRef.current) {
       const engine = new Engine(canvasRef.current, true);
       const scene = new Scene(engine);
+      setEngine(engine);
       setScene(scene);
+
+      BabylonInputManager.Initialize(scene);
+      
       new HemisphericLight("light", new Vector3(1, 1, 0), scene);
 
       const defaultCamera = new FreeCamera("camera1", new Vector3(0, 5, -10), scene);
@@ -77,7 +102,12 @@ const BabylonRender = forwardRef((props, ref) => {
   }, []);
 
   // Render the canvas element and attach the canvasRef to it
-  return <canvas ref={canvasRef} className="pointerEventsOn" style={{ width: '100%', height: '100vh' }} />;
-});
+  return (
+    <BabylonContext.Provider value={{ scene, engine, entities, entityUpdate, destroyEntities }}>
+      {children}
+      <canvas ref={canvasRef} className="bjs-canvas pointerEventsOn" style={{ zIndex: -1 }} />
+    </BabylonContext.Provider>
+  );
+};
 
-export default BabylonRender;
+export default BabylonProvider;

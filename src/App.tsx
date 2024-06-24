@@ -3,11 +3,10 @@ import { useState, FC, useEffect, useRef } from 'react'
 import reactLogo from './assets/react.svg'
 import webSocketLogo from './assets/websocket.svg'
 import viteLogo from '/vite.svg'
-import { useServer } from './providers/ServerProvider'
+import { useServer } from './providers/server/ServerProvider'
 import { MessageTypes } from '../shared/message'
 import { IUserData } from './interfaces/user/user'
-import { SyncedEntity } from 'entities/syncedEntity'
-import BabylonRender from './components/babylon/babylonRender'
+import { useBabylon } from './providers/babylon/BabylonProvider'
 
 interface IAppProps { 
 }
@@ -16,19 +15,7 @@ const App: FC<IAppProps> = () => {
   const [peers, setPeers] = useState<IUserData[]>([]);
   const [localUser, setLocalUser] = useState<IUserData | null>(null);
   const {client, sendMessage, onMessageObservable} = useServer();
-  const babylonRenderRef = useRef<any | null>(null);
-
-  const callCreateEntity = (data: any, _client: WebSocket) => {
-    if(babylonRenderRef?.current){
-      babylonRenderRef?.current.entityUpdate(data, _client);
-    }   
-  };
-
-  const callDestroyEntity = (data: any) => {
-    if(babylonRenderRef?.current){
-      babylonRenderRef?.current.destroyEntities(data.uids);
-    }   
-  };
+  const {entityUpdate, destroyEntities} = useBabylon();
 
   const [peerCursors, setPeerCursors] = useState<{ [uid: string]: {name:string; x: number; y: number } }>({});
 
@@ -47,8 +34,7 @@ const App: FC<IAppProps> = () => {
           console.log('Client handshake received', message.data);
           setCount(message.data?.serverState?.count ?? 0);
           setLocalUser(message.data?.serverState?.users.find((user: IUserData) => user.uid === message.data?.clientState?.uid) ?? null);
-          setPeers(message.data?.serverState?.users.filter((user: IUserData) => user.uid !== message.data?.clientState?.uid) ?? [])
-          console.log("find", message.data?.serverState?.users.find((user: IUserData) => user.uid === message.data?.clientState?.uid));
+          setPeers(message.data?.serverState?.users.filter((user: IUserData) => user.uid !== message.data?.clientState?.uid) ?? []);          
           break; 
         case MessageTypes.SEND_SERVER_DATA:
           setCount(message.data?.count ?? 0);
@@ -67,11 +53,11 @@ const App: FC<IAppProps> = () => {
           break;
         case MessageTypes.ENTITY_UPDATE:
           if(client){
-            callCreateEntity(message.data, client)
+            entityUpdate(message.data, client)
           }
           break;
-        case MessageTypes.DESTROY_ENTITY:
-          callDestroyEntity(message.data)
+        case MessageTypes.DESTROY_ENTITY:      
+            destroyEntities(message.data.uids)
           break;          
         default:
           console.error('Unknown message type', message.type);
@@ -100,9 +86,6 @@ const App: FC<IAppProps> = () => {
 
   return (
     <>
-      <div style={{position: "absolute", left:0, top:0, width:"100%", height:"100%", zIndex:-1}}>
-        <BabylonRender ref={babylonRenderRef} />
-      </div>
       <div className="menu">
         <a href="https://vitejs.dev" target="_blank">
           <img src={viteLogo} className="logo" alt="Vite logo" />
