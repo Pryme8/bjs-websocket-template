@@ -2,6 +2,10 @@
 
 This project serves as a simple example of how to integrate Vite, WebSockets, and React. It demonstrates the setup necessary for developing a real-time application using WebSockets for communication, Vite for the build tooling and development server, and React for the user interface.
 
+FYI... BJS is not hooked up yet.  I wanted to get a simple 2d proof done before going into 3d node sync.
+
+but soon... ohh so very soon.
+
 ## Getting Started
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.

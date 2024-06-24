@@ -4,17 +4,17 @@ import { Observable } from '@babylonjs/core/Misc/observable';
 import { CreateMessage, CreateResponse, IMessage, MessageTypes, ParseMessage } from '../../shared/message';
 
 export interface IServerProviderContext{
-    server: WebSocket | null;
-    messages: any[];
-    sendMessage: (type: MessageTypes, data?: any, reliable?: boolean) => void;
-    onMessageObservable: Observable<IMessage>;
+  client: WebSocket | null;
+  messages: any[];
+  sendMessage: (type: MessageTypes, data?: any, reliable?: boolean) => void;
+  onMessageObservable: Observable<IMessage>;
 }
 
 const initialContext: IServerProviderContext = {
-    server: null,
-    messages: [],
-    sendMessage: (type: MessageTypes, data?: any, reliable?: boolean) => {},
-    onMessageObservable: new Observable<IMessage>(),
+  client: null,
+  messages: [],
+  sendMessage: (type: MessageTypes, data?: any, reliable?: boolean) => {},
+  onMessageObservable: new Observable<IMessage>(),
 };
 
 // Create a context
@@ -31,7 +31,6 @@ const WebSocketProvider: FC<IWebSocketProviderProps> = ({ children }) => {
     const timers: {[key: string]: NodeJS.Timeout} = {};
     
     const onReceivedMessage = useCallback((data: IMessage) => {
-        console.log(`Received message:`, data);
         messageObservable.notifyObservers(data);
         if(data.uid && timers[data.uid]){
             clearTimeout(timers[data.uid]);
@@ -129,7 +128,7 @@ const WebSocketProvider: FC<IWebSocketProviderProps> = ({ children }) => {
   
     // The value provided to the context consumers
     const value = {
-      server: ws!,
+      client: ws!,
       messages,
       sendMessage,
       onMessageObservable: messageObservable,
